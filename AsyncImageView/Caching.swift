@@ -106,7 +106,7 @@ public protocol NSDataConvertible {
 public func diskCacheDefaultCacheDirectory() -> NSURL {
 	return try! NSFileManager()
 		.URLForDirectory(.CachesDirectory, inDomain: .UserDomainMask, appropriateForURL: nil, create: true)
-		.URLByAppendingPathComponent("AsyncImageView", isDirectory: true)
+		.URLByAppendingPathComponent("AsyncImageView", isDirectory: true)!
 }
 
 /// `CacheType` backed by files on disk.
@@ -119,7 +119,7 @@ public final class DiskCache<K: DataFileType, V: NSDataConvertible>: CacheType {
 		let url = diskCacheDefaultCacheDirectory()
 			.URLByAppendingPathComponent(directoryName, isDirectory: true)
 
-		return DiskCache(rootDirectory: url)
+		return DiskCache(rootDirectory: url!)
 	}
 
 	public init(rootDirectory: NSURL) {
@@ -158,11 +158,11 @@ public final class DiskCache<K: DataFileType, V: NSDataConvertible>: CacheType {
 	private func filePathForKey(key: K) -> NSURL {
 		if let subdirectory = key.subdirectory {
 			return self.rootDirectory
-				.URLByAppendingPathComponent(subdirectory, isDirectory: true)
-				.URLByAppendingPathComponent(key.uniqueFilename, isDirectory: false)
+				.URLByAppendingPathComponent(subdirectory, isDirectory: true)!
+				.URLByAppendingPathComponent(key.uniqueFilename, isDirectory: false)!
 		} else {
 			return self.rootDirectory
-				.URLByAppendingPathComponent(key.uniqueFilename, isDirectory: false)
+				.URLByAppendingPathComponent(key.uniqueFilename, isDirectory: false)!
 		}
 	}
 

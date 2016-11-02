@@ -39,6 +39,6 @@ public final class ContextRenderer<Data: RenderDataType>: SynchronousRendererTyp
 		let image = UIGraphicsGetImageFromCurrentImageContext()
 		UIGraphicsEndImageContext()
 
-		return image
+		return image!
 	}
 }

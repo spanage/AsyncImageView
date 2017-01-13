@@ -46,7 +46,7 @@ public protocol RendererType {
 	associatedtype RenderResult: RenderResultType
 	associatedtype Error: ErrorType
 
-	func renderImageWithData(data: Data) -> SignalProducer<RenderResult, Error>
+func renderImageWithData(data: Data) -> SignalProducer<RenderResult, Error>
 }
 
 public protocol SynchronousRendererType {

@@ -15,30 +15,6 @@ public protocol RemoteRenderDataType: RenderDataType {
     var imageURL: NSURL { get }
 }
 
-public protocol AuthenticatedRemoteRenderDataType: RemoteRenderDataType {
-    var username: String { get }
-    var password: String { get }
-}
-
-/// `RendererType` which downloads images from an endpoint requiring basic auth.
-///
-/// Note that this Renderer will ignore `RenderDataType.size` and instead
-/// download the original image.
-/// Consider chaining this with `ImageInflaterRenderer`.
-public final class AuthenticatedRemoteImageRenderer<T: AuthenticatedRemoteRenderDataType>: RendererType {
-    private let session: NSURLSession
-    
-    public init(session: NSURLSession = NSURLSession.sharedSession()) {
-        self.session = session
-    }
-    
-    public func renderImageWithData(data: T) -> SignalProducer<UIImage, RemoteImageRendererError> {
-        let request = NSMutableURLRequest(URL: data.imageURL)
-        request.setValue(authorizationHeader(user: data.username, password: data.password), forHTTPHeaderField: "Authorization")
-        return renderImageWithRequest(request, session: self.session)
-    }
-}
-
 /// `RendererType` which downloads images.
 ///
 /// Note that this Renderer will ignore `RenderDataType.size` and instead
@@ -46,18 +22,21 @@ public final class AuthenticatedRemoteImageRenderer<T: AuthenticatedRemoteRender
 /// Consider chaining this with `ImageInflaterRenderer`.
 public final class RemoteImageRenderer<T: RemoteRenderDataType>: RendererType {
     private let session: NSURLSession
+    private let retryCount: Int
     
-    public init(session: NSURLSession = NSURLSession.sharedSession()) {
+    public init(session: NSURLSession = NSURLSession.sharedSession(), retryCount: Int = 0) {
         self.session = session
+        self.retryCount = retryCount
     }
     
     public func renderImageWithData(data: T) -> SignalProducer<UIImage, RemoteImageRendererError> {
-        return renderImageWithRequest(NSURLRequest(URL: data.imageURL), session: self.session)
+        return renderImageWithRequest(NSURLRequest(URL: data.imageURL), session: self.session, retryCount: self.retryCount)
     }
 }
 
-private func renderImageWithRequest(request: NSURLRequest, session: NSURLSession) -> SignalProducer<UIImage, RemoteImageRendererError> {
+private func renderImageWithRequest(request: NSURLRequest, session: NSURLSession, retryCount: Int) -> SignalProducer<UIImage, RemoteImageRendererError> {
     return session.rac_dataWithRequest(request)
+        .retry(retryCount)
         .mapError(RemoteImageRendererError.LoadingError)
         .attemptMap { (data, response) in
             Result(
@@ -84,14 +63,6 @@ private func renderImageWithRequest(request: NSURLRequest, session: NSURLSession
                     )
             }
     }
-}
-
-private func authorizationHeader(user user: String, password: String) -> String {
-    guard let data = "\(user):\(password)".dataUsingEncoding(NSUTF8StringEncoding) else { return "" }
-    
-    let credential = data.base64EncodedStringWithOptions([])
-    
-    return "Basic \(credential)"
 }
 
 public enum RemoteImageRendererError: ErrorType {
